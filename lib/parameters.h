@@ -85,6 +85,9 @@ public:
     float delta;
     float epsilon;
     int debugging;
+    string safetydfa_file;
+    int checkNodeTypeConsistent;
+    int safetyAlgorithmNum;
     parameters();
 };
 

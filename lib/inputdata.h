@@ -14,6 +14,7 @@ class tail_wrapper;
 #include <vector>
 #include <set>
 #include <json.hpp>
+#include "safety.h"
 
 // for convenience
 using json = nlohmann::json;
@@ -30,13 +31,13 @@ class tail{
 public:
     int sequence;
     int index;
-    
+
     tail* future_tail;
     tail* past_tail;
     tail* next_in_list;
     tail* split_from;
     tail* split_to;
-    
+
     tail(int seq, int i, tail* past_tail);
 
     tail* split();
@@ -52,7 +53,7 @@ public:
 
     static vector<string> alphabet;
     static map<string, int> r_alphabet;
-    
+
     static int num_attributes;
     int node_number;
 
@@ -77,7 +78,7 @@ public:
             return inputdata::all_data[seq_nr]["D"][index];
         return "";
     };
-    
+
     static inline int get_type(tail* t){
         return inputdata::all_data[t->sequence]["T"];
     };
@@ -95,9 +96,10 @@ public:
             return inputdata::all_data[t->sequence]["D"][t->index];
         return "";
     };
-	
-    void add_data_to_apta(apta* the_apta);
-    void add_sequence_to_apta(apta* the_apta, int seq_nr);
+
+    void add_data_to_apta(apta* the_apta, SafetyDFA* safetyDFA = NULL);
+    void add_sequence_to_apta(apta* the_apta, int seq_nr, SafetyDFA* safetyDFA = NULL);
+    vector<string> getIthSequenceSymbols(int seq_nr);
 
     const string to_json_str() const;
 	//const string to_abbadingo_str() const;

@@ -17,6 +17,7 @@ class apta_node;
 #include "apta.h"
 #include "state_merger.h"
 #include "inputdata.h"
+#include "safety.h"
 
 using json = nlohmann::json;
 using namespace std;
@@ -56,7 +57,7 @@ inline std::string className(const std::string& prettyFunction)
 /**
  * @brief Extra data attached to each symbol, stored in each node.
  *
- * Stores all the extra data attached to symbols in a node. The 
+ * Stores all the extra data attached to symbols in a node. The
  * class is used by the evaluation_function class.
  * It also provides the sink functions determining when to ignore
  * a node due to user-defined criteria, i.e. low frquency counts.
@@ -75,9 +76,9 @@ public:
 
     int node_type;
     evaluation_data* undo_pointer;
-    
+
     evaluation_data();
-    
+
 /* Set values from input string */
     virtual void read_from(int seq_nr, int index);
     virtual void read_to(int seq_nr, int index);
@@ -99,8 +100,8 @@ public:
     virtual void print_state_properties(iostream& output, apta* aptacontext);
     virtual void print_transition_properties(iostream&, int symbol, apta* aptacontext);
 
-/* what to ignore, and why */    
-    
+/* what to ignore, and why */
+
     virtual bool sink_consistent(int type);
 
 /* Return a sink type, or -1 if no sink
@@ -134,9 +135,16 @@ public:
 /* Global data */
   bool inconsistency_found;
   int num_merges;
+  SafetyDFA* safetyDFA;
+
+  /** True to check if node type is consistent during the merge */
+  /** False to not check the node type */
+  bool checkNodeTypeConsistent;
 
   void set_params(string params);
-    
+  void set_safetydfa(SafetyDFA* safetyDFA);
+  void set_checkNodeTypeConsistent(int checkNodeTypeConsistent);
+
 /* Boolean indicating the evaluation function type;
    are are two kinds: computed before or after/during a merge.
    When computed before a merge, a merge is only tried for consistency.
@@ -171,6 +179,7 @@ public:
   virtual bool compute_consistency(state_merger *, apta_node* left, apta_node* right);
   virtual int  compute_score(state_merger *, apta_node* left, apta_node* right);
   virtual void reset(state_merger *);
+  virtual bool satisfy_safety(state_merger *, apta_node* left, apta_node* right);
 
 /* Called after an update,
 * when a merge has been performed successfully
@@ -185,7 +194,7 @@ public:
 *
 * called only once for every run, can be complex */
   virtual void initialize(state_merger *);
-  
+
  //virtual void read_file(istream &input_stream, state_merger *);
   virtual void init(string data, state_merger* merger);
   virtual void add_sample(string data, state_merger* merger);

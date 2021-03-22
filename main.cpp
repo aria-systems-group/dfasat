@@ -21,6 +21,7 @@
 #include <popt.h>
 #include "random_greedy.h"
 #include "state_merger.h"
+#include "safety.h"
 #include "evaluate.h"
 #include "dfasat.h"
 #include <sstream>
@@ -54,7 +55,7 @@ bool debugging_enabled = false;
 
 
 /*! \brief Set global vars to values in parameter object.
- *         
+ *
  * @param[in] param pointer to initialized parameter object.
  */
 void init_with_params(parameters* param) {
@@ -122,10 +123,10 @@ void run(parameters* param) {
 
     evaluation_function *eval;
 
-    for(auto myit = DerivedRegister<evaluation_function>::getMap()->begin(); myit != DerivedRegister<evaluation_function>::getMap()->end(); myit++   ) {
-       cout << myit->first << " " << myit->second << endl;
-       //DEBUG("test");
-    }
+    // for(auto myit = DerivedRegister<evaluation_function>::getMap()->begin(); myit != DerivedRegister<evaluation_function>::getMap()->end(); myit++) {
+    //    cout << myit->first << " " << myit->second << endl;
+    //    //DEBUG("test");
+    // }
 
     try {
        eval = (DerivedRegister<evaluation_function>::getMap())->at(param->hName)();
@@ -137,28 +138,33 @@ void run(parameters* param) {
 
     apta* the_apta = new apta();
 
-    eval->set_params(param->evalpar);
+    SafetyDFA* safetyDFA = new SafetyDFA(param->safetydfa_file,
+                                         param->safetyAlgorithmNum);
 
-    merger = state_merger(eval,the_apta);
+    eval->set_safetydfa(safetyDFA);
+    eval->set_params(param->evalpar);
+    eval->set_checkNodeTypeConsistent(param->checkNodeTypeConsistent);
+
+    merger = state_merger(eval, the_apta);
     the_apta->context = &merger;
 
     cout << "Creating apta " <<  "using evaluation class " << eval_string << endl;
 
     ifstream input_stream(param->dfa_file);
-    
+
     inputdata id;
     id.read_abbadingo_file(input_stream);
     input_stream.close();
 
     cerr << "done parsing" << endl;
-    
-    cerr << id.to_json_str();
-    
+
+    cerr << id.to_json_str() << endl;
+
     if(param->mode == "batch") {
        cout << "batch mode selected" << endl;
 
        //merger.read_apta(input_stream);
-       id.add_data_to_apta(the_apta);
+       id.add_data_to_apta(the_apta, safetyDFA);
        the_apta-> alp = id.alphabet;
 
        cout << "reading data finished, processing:" << endl;
@@ -179,7 +185,7 @@ void run(parameters* param) {
           std::ostringstream oss2;
           oss2 << param->dot_file << "dfa" << (i+1) << ".dot";
 
-         cout << "dfasat running";
+         cout << "dfasat running" << endl;
 
           solution = dfasat(merger, param->sat_program, oss2.str().c_str(), oss.str().c_str());
           //bestfirst(&merger);
@@ -197,9 +203,9 @@ void run(parameters* param) {
        input_stream.close();
 
        cout << "reading data finished, processing:" << endl;
- 
+
        // run interactive loop
-       interactive(&merger, param); 
+       interactive(&merger, param);
     } else {
        cerr << "unknown mode of operation selected, valid options are \"batch\", \"stream\", and \"inter\", while the parameter provided was " << param->mode << endl;
        exit(1);
@@ -207,7 +213,7 @@ void run(parameters* param) {
 
     std::ostringstream oss2;
     oss2 << param->dot_file << "final"  << ".dot";
-     
+
     ofstream output(oss2.str().c_str());
     merger.todot();
     output << merger.dot_output;
@@ -239,7 +245,8 @@ int main(int argc, const char *argv[]){
     char* hName = NULL;
     char* hData = NULL;
     char* mode = NULL;
-    char* evalpar = NULL; 
+    char* evalpar = NULL;
+    char* safetydfa_file = NULL;
 
 
     /* below parses command-line options, see 'man popt' */
@@ -252,6 +259,7 @@ int main(int argc, const char *argv[]){
         { "data-name", 'd', POPT_ARG_STRING, &(hData), 'd', "Name of the merge data class to use; default count_data. Use any heuristic in the evaluation directory.", "string" },
         { "mode", 'M', POPT_ARG_STRING, &(mode), 'M', "batch or stream depending on the mode of operation", "string" },
         { "evalpar", 'X', POPT_ARG_STRING, &(evalpar), 'X', "string of key-value pairs", "string" },
+        { "safetydfa_file", 'S', POPT_ARG_STRING, &(safetydfa_file), 'S', "Safety DFA Filename", "string" },
        { "method", 'm', POPT_ARG_INT, &(param->method), 'm', "Method to use when merging states, default value 1 is random greedy (used in Stamina winner), 2 is one standard (non-random) greedy.", "integer" },
         { "seed", 's', POPT_ARG_INT, &(param->seed), 's', "Seed for random merge heuristic; default=12345678", "integer" },
         { "runs", 'n', POPT_ARG_INT, &(param->runs), 'n', "Number of random greedy runs/iterations; default=1. Advice: when using random greedy, a higher value is recommended (100 was used in Stamina winner).\n\nSettings that modify the red-blue state-merging framework:", "integer" },
@@ -281,6 +289,8 @@ int main(int argc, const char *argv[]){
         { "satfinalred", 'F', POPT_ARG_INT, &(param->satfinalred), 'F', "Make all transitions from red states without any occurrences force to have 0 occurrences (similar to targeting a rejecting sink), (setting 0 or 1) before sending the problem to the SAT solver; default=0. Advice: the same as finalred but for the SAT solver. Setting it to 1 greatly improves solving speed.", "integer" },
         { "satsymmetry", 'Y', POPT_ARG_INT, &(param->symmetry), 'Y', "Add symmetry breaking predicates to the SAT encoding (setting 0 or 1), based on Ulyantsev et al. BFS symmetry breaking; default=1. Advice: in our experience this only improves solving speed.", "integer" },
         { "satonlyinputs", 'O', POPT_ARG_INT, &(param->forcing), 'O', "Add predicates to the SAT encoding that force transitions in the learned DFA to be used by input examples (setting 0 or 1); default=0. Advice: leads to non-complete models. When the data is sparse, this should be set to 1. It does make the instance larger and can have a negative effect on the solving time.", "integer" },
+        { "checknodetype", 'T', POPT_ARG_INT, &(param->checkNodeTypeConsistent), 'T', "Check Node Type is Consistent when merging", "integer" },
+        { "safetyAlgorithmNum", 'C', POPT_ARG_INT, &(param->safetyAlgorithmNum), 'C', "Choose Safety Checking Algorithm. 0 for the polynomial algorithm and 1 for the greedy algorithm", "integer" },
         POPT_AUTOHELP
         POPT_TABLEEND
     };
@@ -326,7 +336,7 @@ int main(int argc, const char *argv[]){
 
     param->hName = hName;
     param->hData = hData;
- 
+
     if(mode != NULL)
         param->mode = mode;
     else
@@ -336,6 +346,9 @@ int main(int argc, const char *argv[]){
         param->evalpar = evalpar;
     else
         param->evalpar = "mode=default";
+
+    if (safetydfa_file != NULL)
+        param->safetydfa_file = safetydfa_file;
 
     run(param);
 

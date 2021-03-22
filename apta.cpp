@@ -122,6 +122,7 @@ void apta::print_dot(iostream& output){
         apta_node* n = *Ait;
         output << "\t" << n->number << " [ label=\"";
         n->data->print_state_label(output, this);
+        output << "State No." << n->number << ", ";
         output << "#" << n->size;
         output << "\" ";
         n->data->print_state_style(output, this);
@@ -401,6 +402,7 @@ apta_node::apta_node(){
     type = -1;
 
     red = false;
+    safetyNode = NULL;
 
     try {
        data = (DerivedDataRegister<evaluation_data>::getMap())->at(eval_string)();

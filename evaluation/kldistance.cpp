@@ -70,14 +70,14 @@ void kldistance::update_score(state_merger *merger, apta_node* left, apta_node* 
 
     double left_divider = (double)l->accepting_paths;
     double right_divider = (double)r->accepting_paths;
-    
+
     for(num_map::iterator it = l->num_pos.begin(); it != l->num_pos.end(); ++it){
         update_perplexity(left, l->opc((*it).first), r->opc((*it).first), (*it).second, r->pos((*it).first), left_divider, right_divider);
     }
 };
 
 bool kldistance::compute_consistency(state_merger *merger, apta_node* left, apta_node* right){
-  if (inconsistency_found) return false;
+  if (evaluation_function::compute_consistency(merger, left, right) == false) return false;
   if (extra_parameters == 0) return false;
 
   if ((perplexity / (double)extra_parameters) > CHECK_PARAMETER) return false;
@@ -90,7 +90,7 @@ int kldistance::compute_score(state_merger *merger, apta_node* left, apta_node* 
   if (extra_parameters == 0) return -1;
 
   double val = (perplexity / (double)extra_parameters);
-  
+
   return 100000 - (int)(val * 100.0);
 };
 
@@ -109,7 +109,7 @@ void kldistance::initialize(state_merger* merger){
     for(merged_APTA_iterator Ait = merged_APTA_iterator(merger->aut->root); *Ait != 0; ++Ait){
         apta_node* node = *Ait;
         kl_data* l = (kl_data*) node->data;
-        
+
         if(l->accepting_paths < STATE_COUNT) continue;
 
         for(num_map::iterator it = l->num_pos.begin(); it != l->num_pos.end(); ++it){
@@ -118,5 +118,8 @@ void kldistance::initialize(state_merger* merger){
             l->original_probability_count[symbol] = count * (count / (double)l->accepting_paths);
         }
     }
+    // This line of code must be after the above initialization
+    // This is due to merged_APTA_iterator initializing each node's guard_map's target
+   evaluation_function::initialize(merger);
 };
 

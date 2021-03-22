@@ -88,20 +88,27 @@ int evaluation_data::sink_type(apta_node* node){
     return -1;
 };
 
-bool evaluation_data::sink_consistent(int type){   
+bool evaluation_data::sink_consistent(int type){
     return true;
 };
 
-/* defa */ 
-evaluation_function::evaluation_function() {   
+/* defa */
+evaluation_function::evaluation_function() {
 
 };
 
 
-void evaluation_function::set_params(string params) {   
+void evaluation_function::set_params(string params) {
   this->evalpar = params;
 };
 
+void evaluation_function::set_safetydfa(SafetyDFA* safetyDFA) {
+    this->safetyDFA = safetyDFA;
+}
+
+void evaluation_function::set_checkNodeTypeConsistent(int checkNodeTypeConsistent){
+    this->checkNodeTypeConsistent = checkNodeTypeConsistent;
+}
 
 /* default evaluation, count number of performed merges */
 bool evaluation_function::consistency_check(evaluation_data* l, evaluation_data* r){
@@ -111,9 +118,13 @@ bool evaluation_function::consistency_check(evaluation_data* l, evaluation_data*
 
 bool evaluation_function::consistent(state_merger *merger, apta_node* left, apta_node* right){
   if(inconsistency_found) return false;
-  
+
+  if(checkNodeTypeConsistent && right->type != right->type){ inconsistency_found = true; return false; }
+
   if(left->data->node_type != -1 && right->data->node_type != -1 && left->data->node_type != right->data->node_type){ inconsistency_found = true; return false; }
-    
+
+  if (safetyDFA->preCheckSafety(merger->aut, left, right) == false) { inconsistency_found = true; return false; }
+
   return true;
 };
 
@@ -126,7 +137,12 @@ void evaluation_function::undo_update(state_merger *merger, apta_node* left, apt
 };
 
 bool evaluation_function::compute_consistency(state_merger *merger, apta_node* left, apta_node* right){
-  return inconsistency_found == false;
+  if (inconsistency_found) return false;
+  return satisfy_safety(merger, left, right);
+};
+
+bool evaluation_function::satisfy_safety(state_merger *merger, apta_node* left, apta_node* right){
+  return safetyDFA->postCheckSafety(merger->aut, left, right);
 };
 
 int evaluation_function::compute_score(state_merger *merger, apta_node* left, apta_node* right){
@@ -143,14 +159,15 @@ void evaluation_function::update(state_merger *merger){
 };
 
 void evaluation_function::initialize(state_merger *merger){
+    safetyDFA->initializeAPTA(merger->aut);
 };
 
 /* When is an APTA node a sink state?
  * sink states are not considered merge candidates
  *
  * accepting sink = only accept, accept now, accept afterwards
- * rejecting sink = only reject, reject now, reject afterwards 
- * low count sink = frequency smaller than STATE_COUNT 		
+ * rejecting sink = only reject, reject now, reject afterwards
+ * low count sink = frequency smaller than STATE_COUNT
  * stream sink 	  = frequency smaller than hoeffding says
  ****								*/
 bool is_low_count_sink(apta_node* node){
@@ -176,68 +193,68 @@ cerr << "stream sink check ";
 
 bool evaluation_data::sink_consistent(apta_node* node, int type){
     if(!USE_SINKS) return true;
-    
+
     if(type == 0) return is_low_count_sink(node);
     if(type == 3) return is_stream_sink(node);
     //if(type == 1) return is_accepting_sink(node);
     //if(type == 2) return is_rejecting_sink(node);
-    
+
     return true;
 };
 
 int evaluation_data::num_sink_types(){
     if(!USE_SINKS) return 0;
-    
+
     // accepting, rejecting, and low count (old)
     // low count and stream
     return 2;
 };
 
-/*  read functions*/ 
+/*  read functions*/
 
 void evaluation_function::init(string data, state_merger* merger) {
 
    // alphabet size is global but no longer used
    // once iterators are fully miplemented it's not needed
-   // anymore. 
+   // anymore.
    std::stringstream lineStream;
    lineStream.str(data);
 
    int samples;
    lineStream >> samples >> alphabet_size;
- 
+
    apta* aut = merger->aut;
-   merger->node_number = 1;  
+   merger->node_number = 1;
    aut->root->depth = 0;
- 
+
 }
 
-void evaluation_function::add_sample(string data, state_merger* merger) { 
+void evaluation_function::add_sample(string data, state_merger* merger) {
 
 
     // set up segmentation of sample line
     std::stringstream lineStream;
     lineStream.str(data);
-           
-    
+
+
     // header of line
     int label;
     int length;
 
-    lineStream >> label >> length; 
+    lineStream >> label >> length;
 
     apta* aut = merger->aut;
 
     apta_node* node = aut->root;
- 
+
 
     // run over symbol/data of sample
     int depth=0;
     int num_alph=merger->seen.size();
 
-    // leading BLANK between string and label length 
+    // leading BLANK between string and label length
     string adv;
-    std::getline(lineStream, adv, ' '); 
+    std::getline(lineStream, adv, ' ');
 
     // init with current length of seen
     for (int index=0; index < length; index++) {
@@ -261,10 +278,10 @@ void evaluation_function::add_sample(string data, state_merger* merger) {
              num_alph++;
          }
          int c = merger->seen[symbol];
-        
+
          // set node age
-         node->age = merger->node_number; 
- 
+         node->age = merger->node_number;
+
          // if root is red, mark child blue
          if(node->child(c) == 0){
              apta_node* next_node = new apta_node(aut);
@@ -273,7 +290,7 @@ void evaluation_function::add_sample(string data, state_merger* merger) {
              next_node->label  = c;
              next_node->number = merger->node_number++;
              next_node->depth = depth;
-  
+
              // move this down
              if(merger->red_states.find(node) != merger->red_states.end()) { merger->blue_states.insert(node->child(c));  }
          }
@@ -285,11 +302,11 @@ void evaluation_function::add_sample(string data, state_merger* merger) {
 
          node->age= merger->node_number;
          // update union-find structure
-         // next_node->find() 
+         // next_node->find()
     }
 
     if(depth > aut->max_depth)  aut->max_depth = depth;
-    
+
     node->size = node->size + 1;
     node->type = label;
 

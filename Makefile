@@ -17,7 +17,7 @@ CFLAGS	=	-O2 -g
 SOURCES := 	$(wildcard *.cpp)
 SOURCESOBJS := $(addprefix obj/, $(SOURCES:.cpp=.o))
 SOURCESPYTHON =	apta.cpp dfasat.cpp  refinement.cpp evaluation_factory.cpp random_greedy.cpp  state_merger.cpp parameters.cpp searcher.cpp stream.cpp interactive.cpp 
-LFLAGS 	= 	-std=c++11 -L/opt/local/lib -I/opt/local/include -I./lib -I. -lm -lpopt -lgsl -lgslcblas
+LFLAGS 	= 	-std=c++11 -L/opt/local/lib -I/opt/local/include -I./lib -I. -lyaml-cpp -lm -lpopt -lgsl -lgslcblas
 PYTHON_EVAL = evaluation/python.cpp
 
 EVALFILES := $(wildcard evaluation/*.cpp)
@@ -66,7 +66,7 @@ gitversion.cpp: ../.git/modules/dfasat/HEAD ../.git/modules/dfasat/index
 
 python: $(EVALOBJS) gitversion.cpp
 	export CPLUS_INCLUDE_PATH=/usr/include/python3.5
-	$(CC) -fPIC -shared $(CFLAGS)  -o flexfringe.lib.so $(SOURCESPYTHON) $^ -I./ $(LFLAGS) $(LIBS) $(PYTHON_LIBS) $(PYTHON_INC) 
+	$(CC) -fPIC -shared $(CFLAGS)  -o flexfringe.lib.so $(SOURCESPYTHON) $^ -I./ $(LFLAGS) $(LIBS) $(PYTHON_LIBS) $(PYTHON_INC)
 	python3 generate.py
 	g++ -W  -g -Wall -fPIC -shared generated.cpp flexfringe.lib.so -o flexfringe.so $(PYTHON_LIBS) $(PYTHON_INC) $(BOOST_LIBS) $(LFLAGS) -Wl,-rpath,'$$ORIGIN' -L. -l:flexfringe.lib.so
 	mv flexfringe.lib.so flexfringe.so $(OUTDIR)

@@ -37,7 +37,7 @@ tail::tail(int seq, int i, tail* pt){
     index = i;
     past_tail = pt;
     if(past_tail != 0) past_tail->future_tail = this;
-    
+
     future_tail = 0;
     next_in_list = 0;
     split_from = 0;
@@ -54,7 +54,7 @@ void inputdata::read_json_file(istream &input_stream){
 void inputdata::read_abbadingo_file(istream &input_stream){
     int num_sequences, alph_size;
     input_stream >> num_sequences;
-    
+
     string tuple;
     input_stream >> tuple;
 
@@ -71,9 +71,9 @@ void inputdata::read_abbadingo_file(istream &input_stream){
         inputdata::num_attributes = stoi(attr);
     else
         inputdata::num_attributes = 0;
-    
+
     //cerr << "ATTR: " << attr << " " << inputdata::num_attributes << endl;
-	
+
 	for(int line = 0; line < num_sequences; ++line){
         read_abbadingo_sequence(input_stream, inputdata::num_attributes);
 	}
@@ -81,7 +81,7 @@ void inputdata::read_abbadingo_file(istream &input_stream){
 
 void inputdata::read_abbadingo_sequence(istream &input_stream, int num_attributes){
     int type, length;
-    
+
     json sequence;
 
     input_stream >> type;
@@ -89,13 +89,13 @@ void inputdata::read_abbadingo_sequence(istream &input_stream, int num_attribute
 
     sequence["T"] = type;
     sequence["L"] = length;
-    
+
     vector<int> symbols(length);
     vector< vector<int> > values(num_attributes, vector<int>(length));
     vector< string > datas(length);
-    
+
     bool has_data = false;
-    
+
     for(int index = 0; index < length; ++index){
         string tuple;
         input_stream >> tuple;
@@ -117,14 +117,14 @@ void inputdata::read_abbadingo_sequence(istream &input_stream, int num_attribute
         std::getline(l2,symbol,':');
         string vals;
         std::getline(l2,vals);
-        
+
         //cerr << symbol << " " << vals << endl;
-        
+
         if(r_alphabet.find(symbol) == r_alphabet.end()){
             r_alphabet[symbol] = alphabet.size();
             alphabet.push_back(symbol);
         }
-        
+
         symbols[index] = r_alphabet[symbol];
         datas[index] = data;
 
@@ -147,23 +147,53 @@ cerr << val;
     }
     if(has_data)
         sequence["D"] = datas;
-    
+
     all_data.push_back(sequence);
 };
 
-void inputdata::add_data_to_apta(apta* the_apta){
+void inputdata::add_data_to_apta(apta* the_apta, SafetyDFA* safetyDFA){
+    if (safetyDFA != NULL) safetyDFA->setAlphabet(alphabet);
+
     for(int i = 0; i < all_data.size(); ++i){
-        add_sequence_to_apta(the_apta, i);
-    } 
+        add_sequence_to_apta(the_apta, i, safetyDFA);
+    }
+
+    for (int i=0; i<alphabet.size(); i++) {
+        the_apta->alphabet[i] = alphabet[i];
+    }
 };
 
-void inputdata::add_sequence_to_apta(apta* the_apta, int seq_nr){
+vector<string> inputdata::getIthSequenceSymbols(int seq_nr) {
+    //  Get ith sequence 'Symbols' from the input data
+    // where 'Symbols' is a vector of symbols
     json sequence = all_data[seq_nr];
-    
+
+    int depth = 0;
+    tail* ot = 0;
+
+    vector<string> symbolStrs;
+    for(int index = 0; index < sequence["L"]; index++){
+        depth++;
+        tail* nt = new tail(seq_nr, index, ot);
+        int symbol = sequence["S"][index];
+        string symbolStr = alphabet[symbol];
+        symbolStrs.push_back(symbolStr);
+    }
+    return symbolStrs;
+}
+
+void inputdata::add_sequence_to_apta(apta* the_apta, int seq_nr, SafetyDFA* safetyDFA){
+    if (safetyDFA != NULL) {
+        vector<string> symbols = getIthSequenceSymbols(seq_nr);
+        if (!safetyDFA->isSafeSymbols(symbols)) return;
+    }
+
+    json sequence = all_data[seq_nr];
+
     int depth = 0;
     apta_node* node = the_apta->root;
     tail* ot = 0;
-    
+
     for(int index = 0; index < sequence["L"]; index++){
         depth++;
         tail* nt = new tail(seq_nr, index, ot);

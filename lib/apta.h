@@ -21,6 +21,7 @@ class apta_guard;
 
 #include "parameters.h"
 #include "inputdata.h"
+#include "safety.h"
 //#include "state_merger.h"
 
 using namespace std;
@@ -164,6 +165,12 @@ public:
         return 0;
     };
 
+    void setSafetyNode(SafetyDFANode* safetyNode) {
+        this->safetyNode = safetyNode;
+    };
+
+    SafetyDFANode* getSafetyNode() { return safetyNode; }
+
     /** the incomming transition label */
     int label;
     
@@ -193,6 +200,9 @@ public:
     
     /** extra information for merging heursitics and consistency checks */
     evaluation_data* data;
+
+    /** safety state computed from the trace to get to the current node */
+    SafetyDFANode* safetyNode;
 
     apta_node();
     apta_node(apta* context);

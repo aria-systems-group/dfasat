@@ -79,7 +79,9 @@ bool count_driven::consistency_check(evaluation_data* left, evaluation_data* rig
 /* default evaluation, count number of performed merges */
 bool count_driven::consistent(state_merger *merger, apta_node* left, apta_node* right){
     if(inconsistency_found) return false;
-  
+
+    if(evaluation_function::consistent(merger, left, right) == false) return false;
+
     count_data* l = (count_data*)left->data;
     count_data* r = (count_data*)right->data;
 
