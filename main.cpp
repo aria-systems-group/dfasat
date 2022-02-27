@@ -137,6 +137,7 @@ void run(parameters* param) {
     }
 
     apta* the_apta = new apta();
+    std::cout << the_apta->root->x->size() << std::endl;
 
     SafetyDFA* safetyDFA = new SafetyDFA(param->safetydfa_file,
                                          param->safetyAlgorithmNum);
@@ -147,25 +148,34 @@ void run(parameters* param) {
 
     merger = state_merger(eval, the_apta);
     the_apta->context = &merger;
+    std::cout << merger.aut->root->x->size() << std::endl;
+    std::cout << the_apta->root->x->size() << std::endl;
 
     cout << "Creating apta " <<  "using evaluation class " << eval_string << endl;
 
-    ifstream input_stream(param->dfa_file);
+    inputdata* id = new inputdata();
 
-    inputdata id;
-    id.read_abbadingo_file(input_stream);
+    ifstream input_stream(param->dfa_file);
+    id->read_abbadingo_file(input_stream);
     input_stream.close();
+
+    if (param->state_file != ""){
+        ifstream f(param->state_file);
+        id->read_state_file(f);
+        f.close();
+    }
 
     cerr << "done parsing" << endl;
 
-    cerr << id.to_json_str() << endl;
+    cerr << id->to_json_str() << endl;
 
     if(param->mode == "batch") {
        cout << "batch mode selected" << endl;
 
        //merger.read_apta(input_stream);
-       id.add_data_to_apta(the_apta, safetyDFA);
-       the_apta-> alp = id.alphabet;
+        std::cout << the_apta->root->x->size() << std::endl;
+       id->add_data_to_apta(the_apta);
+       the_apta-> alp = id->alphabet;
 
        cout << "reading data finished, processing:" << endl;
        // run the state merger
@@ -247,7 +257,7 @@ int main(int argc, const char *argv[]){
     char* mode = NULL;
     char* evalpar = NULL;
     char* safetydfa_file = NULL;
-
+    char* state_file = NULL;
 
     /* below parses command-line options, see 'man popt' */
     poptContext optCon;
@@ -260,7 +270,8 @@ int main(int argc, const char *argv[]){
         { "mode", 'M', POPT_ARG_STRING, &(mode), 'M', "batch or stream depending on the mode of operation", "string" },
         { "evalpar", 'X', POPT_ARG_STRING, &(evalpar), 'X', "string of key-value pairs", "string" },
         { "safetydfa_file", 'S', POPT_ARG_STRING, &(safetydfa_file), 'S', "Safety DFA Filename", "string" },
-       { "method", 'm', POPT_ARG_INT, &(param->method), 'm', "Method to use when merging states, default value 1 is random greedy (used in Stamina winner), 2 is one standard (non-random) greedy.", "integer" },
+        { "state_file", 'Z', POPT_ARG_STRING, &(state_file), 'Z', "State Filename in abbadingo format", "string" },
+        { "method", 'm', POPT_ARG_INT, &(param->method), 'm', "Method to use when merging states, default value 1 is random greedy (used in Stamina winner), 2 is one standard (non-random) greedy.", "integer" },
         { "seed", 's', POPT_ARG_INT, &(param->seed), 's', "Seed for random merge heuristic; default=12345678", "integer" },
         { "runs", 'n', POPT_ARG_INT, &(param->runs), 'n', "Number of random greedy runs/iterations; default=1. Advice: when using random greedy, a higher value is recommended (100 was used in Stamina winner).\n\nSettings that modify the red-blue state-merging framework:", "integer" },
         { "extend", 'x', POPT_ARG_INT, &(param->extend), 'x', "When set to 1, any merge candidate (blue) that cannot be merged with any target (red) is immediately changed into a (red) target; default=1. If set to 0, a merge candidate is only changed into a target when no more merges are possible. Advice: unclear which strategy is best, when using statistical (or count-based) consistency checks, keep in mind that merge consistency between states may change due to other performed merges. This will especially influence low frequency states. When there are a lot of those, we therefore recommend setting x=0.", "integer" },
@@ -349,6 +360,9 @@ int main(int argc, const char *argv[]){
 
     if (safetydfa_file != NULL)
         param->safetydfa_file = safetydfa_file;
+
+    if (state_file != NULL)
+        param->state_file = state_file;
 
     run(param);
 

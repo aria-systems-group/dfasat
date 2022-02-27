@@ -50,6 +50,7 @@ class inputdata{
 public:
 
     static json all_data;
+    static json state_data;
 
     static vector<string> alphabet;
     static map<string, int> r_alphabet;
@@ -57,9 +58,14 @@ public:
     static int num_attributes;
     int node_number;
 
+    SafetyDFA* safetyDFA;
+
     void read_json_file(istream &input_stream);
     void read_abbadingo_file(istream &input_stream);
-    void read_abbadingo_sequence(istream &input_stream, int);
+    void read_abbadingo_sequence(istream &input_stream, int num_attributes);
+
+    void read_state_file(istream &input_stream);
+    void read_state_sequence(istream &input_stream, int num_attributes);
 
     static inline int get_type(int seq_nr){
         return inputdata::all_data[seq_nr]["T"];
@@ -97,8 +103,10 @@ public:
         return "";
     };
 
-    void add_data_to_apta(apta* the_apta, SafetyDFA* safetyDFA = NULL);
-    void add_sequence_to_apta(apta* the_apta, int seq_nr, SafetyDFA* safetyDFA = NULL);
+    // void add_data_to_apta(apta* the_apta, SafetyDFA* safetyDFA = NULL);
+    // void add_sequence_to_apta(apta* the_apta, int seq_nr, SafetyDFA* safetyDFA = NULL);
+    void add_data_to_apta(apta* the_apta);
+    void add_sequence_to_apta(apta* the_apta, int seq_nr);
     vector<string> getIthSequenceSymbols(int seq_nr);
 
     const string to_json_str() const;
@@ -106,6 +114,10 @@ public:
 
     // to init counters etc
     inputdata();
+
+    inputdata(SafetyDFA* safetyDFA){
+        this->safetyDFA = safetyDFA;
+    }
 };
 
 #endif /* _INPUTDATA_H_*/
