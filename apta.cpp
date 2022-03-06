@@ -375,7 +375,6 @@ apta_node::apta_node(apta *context) {
     age = 0;
 
     red = false;
-    x = new vector<double>(2,0);
 
     try {
        data = (DerivedDataRegister<evaluation_data>::getMap())->at(eval_string)();
@@ -405,7 +404,6 @@ apta_node::apta_node(){
     red = false;
 
     safetyNode = NULL;
-    x = new vector<double>(2,0);
 
     try {
        data = (DerivedDataRegister<evaluation_data>::getMap())->at(eval_string)();
@@ -659,4 +657,9 @@ apta_node::~apta_node(){
         t = n;
     }
     delete data;
+
+    for (state_list::iterator it = X.begin(); it != X.end(); ++it) {
+        delete *it;
+    }
+    X.clear();
 }

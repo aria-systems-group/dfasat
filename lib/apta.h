@@ -51,6 +51,7 @@ typedef map<int, int> num_map;
 
 typedef multimap<int, apta_guard*> guard_map;
 typedef map<int, float> bound_map;
+typedef list<list<double>*> state_list;
 
 class apta_guard{
 public:
@@ -191,7 +192,8 @@ public:
     /** UNION/FIND size measure */
     int size;
 
-    vector<double>* x;
+    // vector<vector<double>*> X;
+    state_list X;
 
     /** is this a red state? */
     bool red;

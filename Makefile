@@ -13,11 +13,12 @@
 # limitations under the License.
 
 CC	=	g++
-CFLAGS	=	-O2 -g 
+CFLAGS	=	-O2 -g
 SOURCES := 	$(wildcard *.cpp)
 SOURCESOBJS := $(addprefix obj/, $(SOURCES:.cpp=.o))
-SOURCESPYTHON =	apta.cpp dfasat.cpp  refinement.cpp evaluation_factory.cpp random_greedy.cpp  state_merger.cpp parameters.cpp searcher.cpp stream.cpp interactive.cpp 
-LFLAGS 	= 	-std=c++11 -L/opt/local/lib -I/opt/local/include -I./lib -I. -lyaml-cpp -lm -lpopt -lgsl -lgslcblas
+SOURCESPYTHON =	apta.cpp dfasat.cpp  refinement.cpp evaluation_factory.cpp random_greedy.cpp  state_merger.cpp parameters.cpp searcher.cpp stream.cpp interactive.cpp
+LFLAGS 	= 	-std=c++11 -L/opt/local/lib -I/opt/local/include -I./lib -I. -lyaml-cpp -lm -lpopt -lgsl -lgslcblas -lglpk
+OLFLAGS = -std=c++11 -I/opt/local/include -I./lib -I.
 PYTHON_EVAL = evaluation/python.cpp
 
 EVALFILES := $(wildcard evaluation/*.cpp)
@@ -52,14 +53,14 @@ flexfringe: $(SOURCESOBJS) $(EVALOBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LFLAGS) $(LIBS)
 
 obj/%.o: %.cpp
-	$(CC) -fPIC -g -c -o $@ $^ $(LFLAGS) $(LIBS)
+	$(CC) -fPIC -g -c -o $@ $^ $(OLFLAGS) $(LIBS)
 
 evaluation/obj/%.o: evaluation/%.cpp
 	$(CC) -fPIC -g -c -o $@ $^ -I./evaluation/lib $(LFLAGS) $(LIBS) $(PYTHON_INC) $(PYTHON_LIBS) $(BOOST_LIBS)
 
 clean:
 	rm -f flexfringe ./obj/*.o ./evaluation/obj/*.o generated.cpp named_tuple.py *.dot exposed_decl.pypp.txt flexfringe*.so gitversion.cpp
-	
+
 gitversion.cpp: ../.git/modules/dfasat/HEAD ../.git/modules/dfasat/index
 	echo "const char *gitversion = \"$(shell git rev-parse HEAD)\";" > $@
 	$(CC) -fPIC -c -o obj/gitversion.o $(LFLAGS) $(LIBS)

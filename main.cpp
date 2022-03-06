@@ -137,7 +137,7 @@ void run(parameters* param) {
     }
 
     apta* the_apta = new apta();
-    std::cout << the_apta->root->x->size() << std::endl;
+    // std::cout << the_apta->root->x->size() << std::endl;
 
     SafetyDFA* safetyDFA = new SafetyDFA(param->safetydfa_file,
                                          param->safetyAlgorithmNum);
@@ -148,8 +148,8 @@ void run(parameters* param) {
 
     merger = state_merger(eval, the_apta);
     the_apta->context = &merger;
-    std::cout << merger.aut->root->x->size() << std::endl;
-    std::cout << the_apta->root->x->size() << std::endl;
+    // std::cout << merger.aut->root->X << std::endl;
+    // std::cout << the_apta->root->X << std::endl;
 
     cout << "Creating apta " <<  "using evaluation class " << eval_string << endl;
 
@@ -173,7 +173,7 @@ void run(parameters* param) {
        cout << "batch mode selected" << endl;
 
        //merger.read_apta(input_stream);
-        std::cout << the_apta->root->x->size() << std::endl;
+    //    std::cout << the_apta->root->x->size() << std::endl;
        id->add_data_to_apta(the_apta);
        the_apta-> alp = id->alphabet;
 

@@ -102,7 +102,6 @@ void SafetyDFA::printTree(){
 
 bool SafetyDFA::preCheckSafety(apta* aut, apta_node* left, apta_node* right) {
     if (root == NULL) {
-        std::cerr << " root is NULL " << std::endl;
         return true;
     }
 
@@ -116,7 +115,6 @@ bool SafetyDFA::preCheckSafety(apta* aut, apta_node* left, apta_node* right) {
 bool SafetyDFA::postCheckSafety(apta* aut, apta_node* left, apta_node* right) {
     // If Safety DFA is not given, just return true
     if (root == NULL) {
-        std::cerr << " root is NULL " << std::endl;
         return true;
     }
 
@@ -137,7 +135,6 @@ void SafetyDFA::setAlphabet(vector<string> alphabet) {
 
 bool SafetyDFA::isSafeSymbols(vector<string> symbols) {
     if (root == NULL) {
-        std::cerr << " root is NULL " << std::endl;
         return true;
     }
     SafetyDFANode* q  = root->getDestNodes()[0];
@@ -167,7 +164,6 @@ bool SafetyDFA::isSafeSymbols(vector<string> symbols) {
 
 void SafetyDFA::initializeAPTA(apta* aut) {
     if (root == NULL) {
-        std::cerr << " root is NULL " << std::endl;
         return;
     }
 

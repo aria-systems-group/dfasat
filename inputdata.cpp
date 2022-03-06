@@ -135,7 +135,7 @@ void inputdata::read_abbadingo_sequence(istream &input_stream, int num_attribute
             l3.str(vals);
             for(int i = 0; i < num_attributes-1; ++i){
                 std::getline(l3,val,',');
-cerr << val;
+                cerr << val;
                 values[i][index] = stof(val);
             }
             std::getline(l3,val);
@@ -268,30 +268,22 @@ void inputdata::add_sequence_to_apta(apta* the_apta, int seq_nr){
 
     int depth = 0;
     apta_node* node = the_apta->root;
-    // node->x = new vector<double>();
-    // for (int i=0; i<xdim; i++)
-    //     node->x->push_back(0.0);
-
-    std::cout << node->x->size() << std::endl;
-    for (int i=0; i<node->x->size(); i++){
-        std::cout << node->x->at(i) << std::endl;
-    }
     tail* ot = 0;
 
     for(int index = 0; index < sequence["L"]; index++){
         depth++;
         tail* nt = new tail(seq_nr, index, ot);
         int symbol = sequence["S"][index];
-        vector<double> x = X[index];
+        list<double>* xp = new list<double>();
+        xp->assign(X[index].begin(), X[index].end());
+        node->X.push_back(xp);
+
         if(node->child(symbol) == 0){
             apta_node* next_node = new apta_node(the_apta);
             node->set_child(symbol, next_node);
             next_node->source = node;
             next_node->label  = symbol;
             next_node->depth  = depth;
-            next_node->x = new vector<double>(xdim, 0);
-            for (int i=0; i<xdim; i++)
-                next_node->x->push_back(x[i]);
             next_node->number = ++(this->node_number);
         }
         node->size = node->size + 1;
