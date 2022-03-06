@@ -18,6 +18,8 @@ class apta_node;
 #include "state_merger.h"
 #include "inputdata.h"
 #include "safety.h"
+#include "state_feasibility_lp.h"
+
 
 using json = nlohmann::json;
 using namespace std;
@@ -131,11 +133,13 @@ public:
 
 /* Constructors */
   evaluation_function();
+  // ~evaluation_function() {delete stateFeasibilityLP; };
 
 /* Global data */
   bool inconsistency_found;
   int num_merges;
   SafetyDFA* safetyDFA;
+  // StateFeasibilityLP* stateFeasibilityLP;
 
   /** True to check if node type is consistent during the merge */
   /** False to not check the node type */

@@ -94,7 +94,7 @@ bool evaluation_data::sink_consistent(int type){
 
 /* defa */
 evaluation_function::evaluation_function() {
-
+    // stateFeasibilityLP = new StateFeasibilityLP();
 };
 
 
@@ -125,6 +125,8 @@ bool evaluation_function::consistent(state_merger *merger, apta_node* left, apta
 
   if (safetyDFA->preCheckSafety(merger->aut, left, right) == false) { inconsistency_found = true; return false; }
 
+//   if (stateFeasibilityLP->isFeasible(merger->aut, left, right) == false) { inconsistency_found = true; return false; }
+
   return true;
 };
 
@@ -137,8 +139,8 @@ void evaluation_function::undo_update(state_merger *merger, apta_node* left, apt
 };
 
 bool evaluation_function::compute_consistency(state_merger *merger, apta_node* left, apta_node* right){
-  if (inconsistency_found) return false;
-  return satisfy_safety(merger, left, right);
+    if (inconsistency_found) return false;
+    if (satisfy_safety(merger, left, right) == false) { inconsistency_found = true; return false; };
 };
 
 bool evaluation_function::satisfy_safety(state_merger *merger, apta_node* left, apta_node* right){
