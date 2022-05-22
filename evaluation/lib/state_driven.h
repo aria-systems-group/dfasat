@@ -1,13 +1,19 @@
-#ifndef __COUNT__
-#define __COUNT__
+#ifndef __STATE_DRIVEN__
+#define __STATE_DRIVEN__
 
 #include "evaluate.h"
+#include <dlib/svm_threaded.h>
+#include <dlib/rand.h>
+
+using namespace dlib;
+typedef matrix<double,2,1> sample_type;
+
 
 /* The data contained in every node of the prefix tree or DFA */
-class count_data: public evaluation_data {
+class state_data: public evaluation_data {
 
 protected:
-  REGISTER_DEC_DATATYPE(count_data);
+  REGISTER_DEC_DATATYPE(state_data);
 
 public:
     int num_accepting;
@@ -15,7 +21,7 @@ public:
     int accepting_paths;
     int rejecting_paths;
 
-    count_data();
+    state_data();
 
     virtual void read_from(int type, int index, int length, int symbol, string data);
     virtual void read_to(int type, int index, int length, int symbol, string data);
@@ -31,13 +37,16 @@ public:
     virtual int num_sink_types();
 };
 
-class count_driven: public evaluation_function {
+class state_driven: public evaluation_function {
 
 protected:
-  REGISTER_DEC_TYPE(count_driven);
+  REGISTER_DEC_TYPE(state_driven);
 
 public:
   int num_merges;
+  bool same_state;
+
+  ovo_trainer trainer;
 
   virtual void update_score(state_merger *merger, apta_node* left, apta_node* right);
   virtual int  compute_score(state_merger*, apta_node* left, apta_node* right);
@@ -47,8 +56,5 @@ public:
 
   //virtual void print_dot(iostream&, state_merger *);
 };
-
-bool is_accepting_sink(apta_node* node);
-bool is_rejecting_sink(apta_node* node);
 
 #endif
