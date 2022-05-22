@@ -51,18 +51,19 @@ typedef map<int, int> num_map;
 
 typedef multimap<int, apta_guard*> guard_map;
 typedef map<int, float> bound_map;
+typedef list<list<double>*> state_list;
 
 class apta_guard{
 public:
     apta_node* target;
     apta_node* undo;
-    
+
     bound_map min_attribute_values;
     bound_map max_attribute_values;
-    
+
     apta_guard();
     apta_guard(apta_guard*);
-    
+
     bool bounds_satisfy(tail* t);
 };
 
@@ -83,17 +84,17 @@ public:
     guard_map guards;
     tail* tails_head;
     void add_tail(tail* t);
-    
+
     /** storing all states merged with this state */
     apta_node* next_merged_node;
     apta_node* representative_of;
-    
+
     /** this gets merged with node, replacing head of list */
     inline void merge_with(apta_node* node){
         this->representative = node;
         this->next_merged_node = node->representative_of;
         node->representative_of = this;
-        
+
         node->size += this->size;
         this->representative = node;
     };
@@ -102,7 +103,7 @@ public:
         this->representative = 0;
         node->representative_of = this->next_merged_node;
         this->next_merged_node = 0;
-        
+
         node->size -= this->size;
         this->representative = 0;
     };
@@ -119,7 +120,7 @@ public:
         if(rep->undo(i) == node) return this;
         return 0;
     };
-    
+
     /* guards, children, and undo map access */
     apta_node* child(tail* t);
     apta_guard* guard(tail* t);
@@ -173,7 +174,7 @@ public:
 
     /** the incomming transition label */
     int label;
-    
+
     /** the type of node (accepting/rejecting/other)*/
     int type;
 
@@ -185,19 +186,22 @@ public:
     int satnumber;
     int colour;
 
-    /** for streaming mode */ 
+    /** for streaming mode */
     int age;
+
+    /** A set of states */
+    state_list X;
 
     /** UNION/FIND size measure */
     int size;
-    
+
     /** is this a red state? */
     bool red;
-    
+
     /** store previously tested merges */
     score_map eval_store;
     size_list size_store;
-    
+
     /** extra information for merging heursitics and consistency checks */
     evaluation_data* data;
 
@@ -213,11 +217,11 @@ public:
 class child_iterator {
 public:
     guard* current;
-    
+
     child_iterator(guard* g);
     void increment_symbol();
     virtual void increment();
-    
+
     apta_node* operator*() const { if(current != 0) return current->target; return 0; }
     child_iterator& operator++() { increment(); return *this; }
 };
@@ -227,11 +231,11 @@ public:
     apta_node* node;
     child_iterator it1;
     guard_map::iterator it2;
-    
+
     child_iterator(apta_node* n);
     void increment_symbol();
     virtual void increment();
-    
+
     apta_node* operator*() const {
         if(it2 != node->guards.end()){
             return *it1;
@@ -257,13 +261,13 @@ class APTA_iterator {
 public:
     apta_node* base;
     apta_node* current;
-    
+
     APTA_iterator(apta_node* start);
-    
+
     apta_node* next_forward();
     apta_node* next_backward();
     virtual void increment();
-    
+
     apta_node* operator*() const { return current; }
     APTA_iterator& operator++() { increment(); return *this; }
 };
@@ -272,41 +276,41 @@ class merged_APTA_iterator {
 public:
     apta_node* base;
     apta_node* current;
-    
+
     merged_APTA_iterator(apta_node* start);
 
     apta_node* next_forward();
     apta_node* next_backward();
     virtual void increment();
-    
+
     apta_node* operator*() const { return current; }
     merged_APTA_iterator& operator++() { increment(); return *this; }
 };
 
 class blue_state_iterator : public merged_APTA_iterator {
 public:
-    
+
     blue_state_iterator(apta_node* start);
 
-    void increment();    
+    void increment();
 };
 
 class red_state_iterator : public merged_APTA_iterator {
 public:
-    
+
     red_state_iterator(apta_node* start);
 
-    void increment();    
+    void increment();
 };
 
 class merged_APTA_iterator_func : public merged_APTA_iterator {
 public:
-    
+
     bool(*check_function)(apta_node*);
 
     merged_APTA_iterator_func(apta_node* start, bool(*)(apta_node*));
 
-    void increment();    
+    void increment();
 };
 
 class tail_iterator {
@@ -314,13 +318,13 @@ public:
     apta_node* base;
     apta_node* current;
     tail* current_tail;
-    
+
     tail_iterator(apta_node* start);
-    
+
     apta_node* next_forward();
     apta_node* next_backward();
     virtual void increment();
-    
+
     tail* operator*() const { return current_tail; }
     tail_iterator& operator++() { increment(); return *this; }
 };
@@ -348,7 +352,7 @@ typedef set<apta_node*, size_compare> state_set;
 
 #include "evaluate.h"
 
-/** 
+/**
  * @brief Data structure for the  prefix tree.
  *
  * The prefix tree is a pointer structure made
@@ -365,7 +369,7 @@ public:
 
     int merge_count;
     int max_depth;
-    
+
     apta();
     ~apta();
 

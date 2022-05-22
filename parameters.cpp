@@ -77,6 +77,7 @@ parameters::parameters(){
     debugging = 0;
     evalpar = "";
     safetydfa_file = "";
+    state_file = "";
     checkNodeTypeConsistent = 0;
     safetyAlgorithmNum = 0;
 };

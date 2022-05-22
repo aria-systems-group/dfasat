@@ -50,6 +50,7 @@ class inputdata{
 public:
 
     static json all_data;
+    static json state_data;
 
     static vector<string> alphabet;
     static map<string, int> r_alphabet;
@@ -60,6 +61,8 @@ public:
     void read_json_file(istream &input_stream);
     void read_abbadingo_file(istream &input_stream);
     void read_abbadingo_sequence(istream &input_stream, int);
+    void read_state_file(istream &input_stream);
+    void read_state_sequence(istream &input_stream, int);
 
     static inline int get_type(int seq_nr){
         return inputdata::all_data[seq_nr]["T"];
@@ -99,6 +102,7 @@ public:
 
     void add_data_to_apta(apta* the_apta, SafetyDFA* safetyDFA = NULL);
     void add_sequence_to_apta(apta* the_apta, int seq_nr, SafetyDFA* safetyDFA = NULL);
+    void add_sequence_state_to_apta(apta* the_apta, int seq_nr, SafetyDFA* safetyDFA = NULL);
     vector<string> getIthSequenceSymbols(int seq_nr);
 
     const string to_json_str() const;

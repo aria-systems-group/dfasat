@@ -86,6 +86,7 @@ public:
     float epsilon;
     int debugging;
     string safetydfa_file;
+    string state_file;
     int checkNodeTypeConsistent;
     int safetyAlgorithmNum;
     parameters();

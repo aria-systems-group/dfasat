@@ -4,9 +4,35 @@
 #include "inputdata.h"
 
 json inputdata::all_data;
+json inputdata::state_data;
 vector<string> inputdata::alphabet;
 map<string, int> inputdata::r_alphabet;
 int inputdata::num_attributes;
+
+vector<std::string> split_spacecomma_strings(std::string inputString){
+    /*
+    Directly taken from https://stackoverflow.com/questions/36974817/splitting-input-string-based-on-whitespace-and-commas
+    */
+
+    int i = 0;
+
+    istringstream ss(inputString);
+    string token;
+
+    vector<std::string> myString;
+    //Separate string based on commas and white spaces
+    getline(ss,token,' ');
+    myString.push_back(token);
+    i++;
+
+    while (getline(ss, token,',')){
+        ss.ignore();
+        myString.push_back(token);
+        i++;
+    }
+
+    return myString;
+}
 
 tail* tail::split(){
     tail* t = new tail(sequence, index, 0);
@@ -134,7 +160,7 @@ void inputdata::read_abbadingo_sequence(istream &input_stream, int num_attribute
             l3.str(vals);
             for(int i = 0; i < num_attributes-1; ++i){
                 std::getline(l3,val,',');
-cerr << val;
+                cerr << val;
                 values[i][index] = stof(val);
             }
             std::getline(l3,val);
@@ -151,11 +177,61 @@ cerr << val;
     all_data.push_back(sequence);
 };
 
+void inputdata::read_state_file(istream &input_stream){
+    int num_sequences;
+
+    input_stream >> num_sequences;
+
+    string tuple;
+    input_stream >> tuple;
+
+	for(int line = 0; line < num_sequences; ++line){
+        read_state_sequence(input_stream, inputdata::num_attributes);
+	}
+};
+
+void inputdata::read_state_sequence(istream &input_stream, int num_attributes){
+    int type, length;
+    json sequence;
+
+    input_stream >> type;
+    input_stream >> length;
+
+    std::string line;
+    getline(input_stream, line);
+    istringstream line_stream(line);
+
+    vector<int> symbols(length);
+    vector< vector<int> > values(num_attributes, vector<int>(length));
+    vector< string > datas(length);
+
+    bool has_data = false;
+
+    vector<vector<double>> X;
+    string list;
+
+    while(getline(line_stream, list, ']')){
+        list = list.substr(2, list.size()-1);
+        vector<std::string> strings = split_spacecomma_strings(list);
+        vector<double> x;
+        for (std::string s : strings) {
+            x.push_back(stod(s));
+        }
+        X.push_back(x);
+    }
+    json jsonX = X;
+    state_data.push_back(jsonX);
+};
+
 void inputdata::add_data_to_apta(apta* the_apta, SafetyDFA* safetyDFA){
     if (safetyDFA != NULL) safetyDFA->setAlphabet(alphabet);
 
     for(int i = 0; i < all_data.size(); ++i){
-        add_sequence_to_apta(the_apta, i, safetyDFA);
+        if (state_data.size() == 0){
+            add_sequence_to_apta(the_apta, i, safetyDFA);
+        } else {
+            add_sequence_state_to_apta(the_apta, i, safetyDFA);
+        }
     }
 
     for (int i=0; i<alphabet.size(); i++) {
@@ -181,6 +257,50 @@ vector<string> inputdata::getIthSequenceSymbols(int seq_nr) {
     }
     return symbolStrs;
 }
+
+void inputdata::add_sequence_state_to_apta(apta* the_apta, int seq_nr, SafetyDFA* safetyDFA){
+    if (safetyDFA != NULL) {
+        vector<string> symbols = getIthSequenceSymbols(seq_nr);
+        if (!safetyDFA->isSafeSymbols(symbols)) return;
+    }
+
+    json sequence = all_data[seq_nr];
+    json jsonX = state_data[seq_nr];
+    vector<vector<double>> X = jsonX.get<vector<vector<double>>>();
+    if (X.size() == 0) return;
+    int xdim = X[0].size();
+
+    int depth = 0;
+    apta_node* node = the_apta->root;
+    tail* ot = 0;
+
+    for(int index = 0; index < sequence["L"]; index++){
+        depth++;
+        tail* nt = new tail(seq_nr, index, ot);
+        int symbol = sequence["S"][index];
+
+        list<double>* xp = new list<double>();
+        xp->assign(X[index].begin(), X[index].end());
+        node->X.push_back(xp);
+
+        if(node->child(symbol) == 0){
+            apta_node* next_node = new apta_node(the_apta);
+            node->set_child(symbol, next_node);
+            next_node->source = node;
+            next_node->label  = symbol;
+            next_node->depth  = depth;
+            next_node->number = ++(this->node_number);
+        }
+        node->size = node->size + 1;
+        node->add_tail(nt);
+        node->data->read_from(seq_nr, index);
+        node = node->child(symbol);
+        node->data->read_to(seq_nr, index);
+        ot = nt;
+    }
+    node->type = sequence["T"];
+    node->size = node->size + 1;
+};
 
 void inputdata::add_sequence_to_apta(apta* the_apta, int seq_nr, SafetyDFA* safetyDFA){
     if (safetyDFA != NULL) {

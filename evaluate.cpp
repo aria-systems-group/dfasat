@@ -119,7 +119,7 @@ bool evaluation_function::consistency_check(evaluation_data* l, evaluation_data*
 bool evaluation_function::consistent(state_merger *merger, apta_node* left, apta_node* right){
   if(inconsistency_found) return false;
 
-  if(checkNodeTypeConsistent && right->type != right->type){ inconsistency_found = true; return false; }
+  if(checkNodeTypeConsistent && left->type != right->type){ inconsistency_found = true; return false; }
 
   if(left->data->node_type != -1 && right->data->node_type != -1 && left->data->node_type != right->data->node_type){ inconsistency_found = true; return false; }
 
